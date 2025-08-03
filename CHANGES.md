@@ -1,74 +1,87 @@
-**Overview**
 
-This document summarizes the critical issues identified in the original app.py, the changes made to refactor the project, and key architectural decisions.
+## Overview
 
-**Major Issues Identified**
+This document summarizes the critical issues identified in the original `app.py`, the changes made to refactor the project, and key architectural decisions.
 
-    1.Code Structure
+---
 
-        All logic was tightly coupled in a single file (app.py).
+## Major Issues Identified
 
-        No separation between routing, database operations, and utilities.
+### 1. Code Structure
+- All logic was tightly coupled in a single file (`app.py`).
+- No separation between routing, database operations, and utilities.
 
-    2.Security Vulnerabilities
+### 2. Security Vulnerabilities
+- SQL queries were directly interpolated, exposing the app to SQL Injection.
+- Passwords were stored in plain text without hashing.
+- Input validation was missing or improperly handled.
 
-        SQL queries were directly interpolated, exposing the app to SQL Injection.
+### 3. Best Practices Violated
+- No error handling or HTTP status codes.
+- Used `print()` for logging.
+- Used `json.loads(request.get_data())` instead of Flask’s `request.get_json()`.
+- No model abstraction or centralized database connection.
 
-        Passwords were stored in plain text without hashing.
+---
 
-        Input validation was missing or improperly handled.
+## Changes Made
 
-    3.Best Practices Violated
+### 1. Project Restructure
+- Created a modular app structure:\
+   app/
 
-        No error handling or HTTP status codes.
+   ├── init.py
 
-        Used print() for logging.
+   ├── routes/user_routes.py
 
-        json.loads(request.get_data()) used instead of Flask’s request.get_json().
+   ├── db.py
 
-        No model abstraction or centralized database connection.
+   └── utils.py
+- Moved routing logic to `user_routes.py` using Flask Blueprint.
+- Centralized database connection logic in `db.py`.
 
-**Changes Made**
+### 2. Security Improvements
+- Parameterized all SQL queries to eliminate SQL injection risk.
+- Hashed passwords using SHA-256 (in `utils.py`).
+- Removed all plaintext password usage from the database.
 
-1. Project Restructure:
+### 3. Data Validation & Error Handling
+- Added proper checks for required fields (name, email, password).
+- Added meaningful error messages with correct HTTP status codes:
+- `400` for bad requests
+- `401` for failed login
+- `404` for not found
+- `201` for successful resource creation
+- Replaced manual JSON parsing with `request.get_json()`.
 
-    Created a modular app structure:
+### 4. Response Format
+- Replaced all `str(user)` responses with properly structured JSON using `jsonify()`.
+- Ensured consistent success and failure messages in JSON format.
 
-        `app/
-        
-          ├── __init__.py
-        
-          ├── routes/user_routes.py
-        
-          ├── db.py
-        
-          └── utils.py`
+---
 
-    Moved routing logic to user_routes.py Blueprint.
+## Assumptions & Trade-offs
 
-    Centralized DB connection in db.py.
+- Chose to continue using SQLite for simplicity, but in a real-world application, a NoSQL solution like MongoDB might be better for scalability and flexibility.
+- Did not use an ORM like SQLAlchemy to avoid overengineering, staying close to the original raw SQL setup.
+- Assumed basic email validity and uniqueness but did not enforce it in the schema.
 
+---
 
-2. Security Improvements:
+## What I Would Do With More Time
 
-    Parameterized all SQL queries to eliminate SQL injection risk.
+- Build a simple testing UI (web-based interface) where users can test all API routes visually.
+- Integrate form-based frontend for API interaction.
+- Implement token-based authentication (e.g., JWT).
+- Add email validation and uniqueness enforcement.
+- Integrate MongoDB or another scalable NoSQL backend for dynamic schema handling.
+- Replace `print()` with proper logging (`logging` module).
+- Create test coverage using `pytest` and mock database layers.
 
-    Hashed passwords using SHA-256 (utils.py).
+---
 
-    Removed all plaintext password usage.
+## AI Usage Disclosure
 
-
-3. Data Validation & Error Handling:
-
-    Added proper checks for missing fields (e.g., name, email, password).
-
-    Added error messages and appropriate HTTP status codes (400, 401, 404, 201).
-
-    Used Flask’s request.get_json() instead of manually parsing raw data.
-
-
-4. Response Format:
-
-    Replaced stringified responses (str(user)) with proper JSON responses using jsonify.
-
-    Returned structured success/failure messages in JSON.
+- **Tool Used:** ChatGPT (OpenAI)
+- **Purpose:** Referred to best practices for Flask APIs including secure database access, structure modularization, and password handling.
+- The actual implementation, design decisions, and code restructuring were guided by my understanding of REST APIs and refined with assistance from the tool.
